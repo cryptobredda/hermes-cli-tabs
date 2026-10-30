@@ -2,7 +2,7 @@
 
 Directory-scoped chat tabs for Hermes. **v1.1.0** prefers native TUI tabs when the installed Hermes advertises the complete feature contract, and otherwise retains the isolated tmux backend.
 
-The plugin never installs patches into Hermes. Native support is a separate [Hermes core contribution](https://github.com/cryptobredda/hermes-agent/tree/feat/native-tui-session-tabs-20261030); publishing this plugin does not mean that contribution has shipped in an upstream release.
+The plugin never installs patches into Hermes. Native support is a separate [Hermes core contribution](https://github.com/NousResearch/hermes-agent/pull/146974); publishing this plugin does not mean that contribution has shipped in an upstream release.
 
 ## Install and diagnose
 
