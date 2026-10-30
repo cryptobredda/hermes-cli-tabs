@@ -166,19 +166,37 @@ class Tabs:
 def main(args):
     if args.action=='start' and (not sys.stdin.isatty() or not sys.stdout.isatty()):
         print('hermes tabs requires an interactive terminal; no child was started.',file=sys.stderr);return 1
-    if args.action=='start' and os.environ.get('TMUX'):
-        print('Open hermes tabs in a plain terminal, outside an existing tmux client.',file=sys.stderr);return 1
     try:
         from hermes_constants import get_hermes_home
         from plugins.plugin_storage import plugin_data_dir
+        from .native import NativeTabs, native_capabilities, native_control_error, native_environment, select_backend
         workspace=Path(args.directory or Path.cwd()).expanduser().resolve()
-        tabs=Tabs(get_hermes_home(),workspace,plugin_data_dir(PLUGIN),interface=args.interface)
+        if not workspace.is_dir():raise ValueError('Workspace is not a directory: '+str(workspace))
+        home=get_hermes_home()
+        hermes=shutil.which('hermes')
+        if not hermes:raise ValueError('The Hermes CLI executable is not on PATH.')
+        requested=getattr(args,'backend','auto')
+        capabilities=native_capabilities(hermes,native_environment(home,workspace)) if args.interface=='tui' and (requested!='tmux' or args.action=='doctor') else None
+        backend=select_backend(requested,args.interface,capabilities)
+        if args.action=='doctor':
+            available=backend=='native' or bool(shutil.which('tmux'))
+            result={'backend':backend,'available':available,'directory':str(workspace),
+                    'native_capabilities':capabilities,'tmux_available':bool(shutil.which('tmux'))}
+            if args.json:print(json.dumps(result))
+            else:print(f"Session tabs backend: {backend}; available: {available}; directory: {workspace}")
+            return 0 if available else 1
+        if backend=='native':
+            if args.action!='start':raise ValueError(native_control_error(args.action))
+            return NativeTabs(home,workspace,hermes=hermes).start(args.resume)
+        if args.action=='start' and os.environ.get('TMUX'):
+            raise ValueError('Open the tmux backend in a plain terminal, outside an existing tmux client. Compatible native mode works inside a host multiplexer.')
+        tabs=Tabs(home,workspace,plugin_data_dir(PLUGIN),interface=args.interface,hermes=hermes)
         if args.action=='start':return tabs.start(args.resume)
         if args.action=='new':tabs.new(args.resume);return 0
         if args.action=='detach':tabs.command('detach-client','-s',tabs.session);return 0
         if args.action=='close':tabs.close();return 0
         rows=tabs.windows()
-        if args.json:print(json.dumps({'directory':str(workspace),'tabs':rows}))
+        if args.json:print(json.dumps({'backend':'tmux','directory':str(workspace),'tabs':rows}))
         else:
             for row in rows:print(f"{row['index']}. {row['title']}"+(' *' if row['active'] else ''))
         return 0

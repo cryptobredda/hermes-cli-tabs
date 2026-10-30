@@ -1,6 +1,6 @@
 name: cli-session-tabs
-version: 1.0.0
-description: Directory-scoped, mouse-enabled terminal session tabs through an isolated tmux server.
+version: 1.1.0
+description: Directory-scoped native TUI session tabs when supported, with an isolated tmux fallback.
 requires_hermes: ">=0.22.2"
 provides_tools: []
 provides_hooks: []
